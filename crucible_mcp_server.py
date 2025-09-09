@@ -42,7 +42,11 @@ server = Server("crucible-api")
 
 @server.list_tools()
 async def handle_list_tools() -> List[Tool]:
-    """List available Crucible API tools."""
+    """List available Crucible API tools. These tools provide access to the Molecular Foundry data lakehouse 
+        which contains experimental synthesis and characterization data as well as information about the users, 
+        projects, and instruments involved in acquiring the data.  Any instrument settings or 
+        parameters should be saved in the scientific_metadata record associated with each dataset. 
+        """
     return [
         Tool(
             name="list_projects",
