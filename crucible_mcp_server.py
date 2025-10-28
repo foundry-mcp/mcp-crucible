@@ -313,6 +313,11 @@ async def handle_list_tools() -> List[Tool]:
                     "metadata": {
                         "type": "object",
                         "description": "Scientific metadata to update"
+                    },
+                    "overwrite": {
+                        "type": "boolean",
+                        "description": "Whether to overwrite existing metadata (default: False)",
+                        "default": False
                     }
                 },
                 "required": ["dsid", "metadata"]
@@ -406,9 +411,9 @@ async def handle_list_tools() -> List[Tool]:
                         "type": "string",
                         "description": "Name of the instrument"
                     },
-                    "creation_location": {
+                    "location": {
                         "type": "string",
-                        "description": "Location where instrument was created"
+                        "description": "Location where instrument is located"
                     },
                     "instrument_owner": {
                         "type": "string",
@@ -568,7 +573,7 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             result = client.get_user_account_info()
 
         elif name == "get_project":
-            result = client._get_project(arguments["project_id"])
+            result = client.get_project(arguments["project_id"])
         
         # get_user
         # get_user_by_email
@@ -581,7 +586,7 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
         elif name == "get_dataset":
             dsid = arguments["dsid"]
             include_metadata = arguments.get("include_metadata", False)
-            result = client._get_dataset(dsid, include_metadata=include_metadata)
+            result = client.get_dataset(dsid, include_metadata=include_metadata)
             
         elif name == "download_dataset":
             dsid = arguments["dsid"]
@@ -595,7 +600,7 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             result = client.upload_dataset(dsid, file_path)
             
         elif name == "create_dataset":
-            result = client.create_dataset(**arguments)
+            result = client.build_new_dataset_from_json(**arguments)
             
         elif name == "request_ingestion":
             dsid = arguments["dsid"]
@@ -616,7 +621,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
         elif name == "update_scientific_metadata":
             dsid = arguments["dsid"]
             metadata = arguments["metadata"]
-            result = client.update_scientific_metadata(dsid, metadata)
+            overwrite = arguments.get("overwrite", False)
+            result = client.update_scientific_metadata(dsid, metadata, overwrite=overwrite)
             
         elif name == "add_dataset_keyword":
             dsid = arguments["dsid"]
@@ -638,13 +644,13 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
         elif name == "get_instrument":
             instrument_name = arguments.get("instrument_name")
             instrument_id = arguments.get("instrument_id")
-            result = client._get_instrument(instrument_name=instrument_name, instrument_id=instrument_id)
+            result = client.get_instrument(instrument_name=instrument_name, instrument_id=instrument_id)
             
         elif name == "get_or_add_instrument":
             instrument_name = arguments["instrument_name"]
-            creation_location = arguments.get("creation_location")
+            location = arguments.get("location")
             instrument_owner = arguments.get("instrument_owner")
-            result = client.get_or_add_instrument(instrument_name, creation_location=creation_location, instrument_owner=instrument_owner)
+            result = client.get_or_add_instrument(instrument_name, location=location, instrument_owner=instrument_owner)
             
         elif name == "list_samples":
             #dataset_id = arguments.get("dataset_id")
