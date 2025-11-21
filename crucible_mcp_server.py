@@ -53,8 +53,27 @@ async def handle_list_tools() -> List[Tool]:
             description="List all accessible projects in Crucible. This function first checks if the API key is associated with a user or admin account. Then uses that information to either list all projects (admin) or all projects associated with the current user's ORCID",
             inputSchema={
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 100)"
+                    }
+                },
                 "required": []
+            },
+        ),
+        Tool(
+            name="get_projects_by_user",
+            description="Get all projects for a specific user by their ORCID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "orcid": {
+                        "type": "string",
+                        "description": "ORCID identifier (format: 0000-0000-0000-000X)"
+                    }
+                },
+                "required": ["orcid"]
             },
         ),
         Tool(
@@ -69,6 +88,20 @@ async def handle_list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["project_id"]
+            },
+        ),
+        Tool(
+            name="get_user",
+            description="Get user details by ORCID. Requires admin permissions.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "orcid": {
+                        "type": "string",
+                        "description": "ORCID identifier (format: 0000-0000-0000-000X)"
+                    }
+                },
+                "required": ["orcid"]
             },
         ),
         Tool(
@@ -143,6 +176,24 @@ async def handle_list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="update_dataset",
+            description="Update an existing dataset with new field values",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "updates": {
+                        "type": "object",
+                        "description": "Field names and values to update (e.g., dataset_name, public, measurement, etc.)"
+                    }
+                },
+                "required": ["dsid", "updates"]
             },
         ),
         Tool(
@@ -287,6 +338,149 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
+            name="get_ingestion_status",
+            description="Get the status of an ingestion request",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "reqid": {
+                        "type": "string",
+                        "description": "Request ID for the ingestion"
+                    }
+                },
+                "required": ["dsid", "reqid"]
+            },
+        ),
+        Tool(
+            name="get_scicat_status",
+            description="Get the status of a SciCat request",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "reqid": {
+                        "type": "string",
+                        "description": "Request ID for the SciCat operation"
+                    }
+                },
+                "required": ["dsid", "reqid"]
+            },
+        ),
+        Tool(
+            name="wait_for_request_completion",
+            description="Wait for a request to complete by polling its status",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "reqid": {
+                        "type": "string",
+                        "description": "Request ID"
+                    },
+                    "request_type": {
+                        "type": "string",
+                        "description": "Type of request",
+                        "enum": ["ingest", "scicat_update"]
+                    },
+                    "sleep_interval": {
+                        "type": "integer",
+                        "description": "Seconds between status checks (default: 5)"
+                    }
+                },
+                "required": ["dsid", "reqid", "request_type"]
+            },
+        ),
+        Tool(
+            name="get_thumbnails",
+            description="Get thumbnails for a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 100)"
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="add_thumbnail",
+            description="Add a thumbnail to a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to image file"
+                    },
+                    "thumbnail_name": {
+                        "type": "string",
+                        "description": "Display name (uses filename if not provided)"
+                    }
+                },
+                "required": ["dsid", "file_path"]
+            },
+        ),
+        Tool(
+            name="get_associated_files",
+            description="Get associated files for a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 100)"
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="add_associated_file",
+            description="Add an associated file to a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to file (for calculating metadata)"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Filename to store (uses basename if not provided)"
+                    }
+                },
+                "required": ["dsid", "file_path"]
+            },
+        ),
+        Tool(
             name="get_scientific_metadata",
             description="Get scientific metadata for a dataset",
             inputSchema={
@@ -321,6 +515,20 @@ async def handle_list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["dsid", "metadata"]
+            },
+        ),
+        Tool(
+            name="list_keywords",
+            description="List all keywords in the database with their dataset counts",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 100)"
+                    }
+                },
+                "required": []
             },
         ),
         Tool(
@@ -369,6 +577,71 @@ async def handle_list_tools() -> List[Tool]:
                         "type": "boolean",
                         "description": "Whether to wait for the SciCat response",
                         "default": False
+                    },
+                    "overwrite_data": {
+                        "type": "boolean",
+                        "description": "Whether to overwrite existing SciCat records",
+                        "default": False
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="request_google_drive_transfer",
+            description="Request transfer of dataset to Google Drive",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="get_google_drive_info",
+            description="Get current Google Drive location information for a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="get_organized_google_drive_info",
+            description="Get organized Google Drive folder information for a dataset",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 100)"
+                    }
+                },
+                "required": ["dsid"]
+            },
+        ),
+        Tool(
+            name="delete_dataset",
+            description="Delete a dataset (caution: this is a destructive operation)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "dsid": {
+                        "type": "string",
+                        "description": "Dataset ID"
                     }
                 },
                 "required": ["dsid"]
@@ -565,15 +838,22 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
 
     try:
         result = None
-        
+
         if name == "list_projects":
-            result = client.list_projects()
-        
+            limit = arguments.get("limit", 100)
+            result = client.list_projects(limit=limit)
+
+        elif name == "get_projects_by_user":
+            result = client.get_projects_by_user(arguments["orcid"])
+
         elif name == "get_account":
             result = client.get_user_account_info()
 
         elif name == "get_project":
             result = client.get_project(arguments["project_id"])
+
+        elif name == "get_user":
+            result = client.get_user(arguments["orcid"])
         
         # get_user
         # get_user_by_email
@@ -587,7 +867,12 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             dsid = arguments["dsid"]
             include_metadata = arguments.get("include_metadata", False)
             result = client.get_dataset(dsid, include_metadata=include_metadata)
-            
+
+        elif name == "update_dataset":
+            dsid = arguments["dsid"]
+            updates = arguments["updates"]
+            result = client.update_dataset(dsid, **updates)
+
         elif name == "download_dataset":
             dsid = arguments["dsid"]
             file_name = arguments.get("file_name")
@@ -613,7 +898,46 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             reqid = arguments["reqid"]
             request_type = arguments["request_type"]
             result = client.get_request_status(dsid, reqid, request_type)
-            
+
+        elif name == "get_ingestion_status":
+            dsid = arguments["dsid"]
+            reqid = arguments["reqid"]
+            result = client.get_ingestion_status(dsid, reqid)
+
+        elif name == "get_scicat_status":
+            dsid = arguments["dsid"]
+            reqid = arguments["reqid"]
+            result = client.get_scicat_status(dsid, reqid)
+
+        elif name == "wait_for_request_completion":
+            dsid = arguments["dsid"]
+            reqid = arguments["reqid"]
+            request_type = arguments["request_type"]
+            sleep_interval = arguments.get("sleep_interval", 5)
+            result = client.wait_for_request_completion(dsid, reqid, request_type, sleep_interval=sleep_interval)
+
+        elif name == "get_thumbnails":
+            dsid = arguments["dsid"]
+            limit = arguments.get("limit", 100)
+            result = client.get_thumbnails(dsid, limit=limit)
+
+        elif name == "add_thumbnail":
+            dsid = arguments["dsid"]
+            file_path = arguments["file_path"]
+            thumbnail_name = arguments.get("thumbnail_name")
+            result = client.add_thumbnail(dsid, file_path, thumbnail_name=thumbnail_name)
+
+        elif name == "get_associated_files":
+            dsid = arguments["dsid"]
+            limit = arguments.get("limit", 100)
+            result = client.get_associated_files(dsid, limit=limit)
+
+        elif name == "add_associated_file":
+            dsid = arguments["dsid"]
+            file_path = arguments["file_path"]
+            filename = arguments.get("filename")
+            result = client.add_associated_file(dsid, file_path, filename=filename)
+
         elif name == "get_scientific_metadata":
             dsid = arguments["dsid"]
             result = client.get_scientific_metadata(dsid)
@@ -623,12 +947,16 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             metadata = arguments["metadata"]
             overwrite = arguments.get("overwrite", False)
             result = client.update_scientific_metadata(dsid, metadata, overwrite=overwrite)
-            
+
+        elif name == "list_keywords":
+            limit = arguments.get("limit", 100)
+            result = client.list_keywords(limit=limit)
+
         elif name == "add_dataset_keyword":
             dsid = arguments["dsid"]
             keyword = arguments["keyword"]
             result = client.add_dataset_keyword(dsid, keyword)
-            
+
         elif name == "get_dataset_keywords":
             dsid = arguments["dsid"]
             result = client.get_dataset_keywords(dsid)
@@ -636,8 +964,26 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
         elif name == "send_to_scicat":
             dsid = arguments["dsid"]
             wait_for_response = arguments.get("wait_for_response", False)
-            result = client.send_to_scicat(dsid, wait_for_scicat_response=wait_for_response)
-            
+            overwrite_data = arguments.get("overwrite_data", False)
+            result = client.send_to_scicat(dsid, wait_for_scicat_response=wait_for_response, overwrite_data=overwrite_data)
+
+        elif name == "request_google_drive_transfer":
+            dsid = arguments["dsid"]
+            result = client.request_google_drive_transfer(dsid)
+
+        elif name == "get_google_drive_info":
+            dsid = arguments["dsid"]
+            result = client.get_google_drive_info(dsid)
+
+        elif name == "get_organized_google_drive_info":
+            dsid = arguments["dsid"]
+            limit = arguments.get("limit", 100)
+            result = client.get_organized_google_drive_info(dsid, limit=limit)
+
+        elif name == "delete_dataset":
+            dsid = arguments["dsid"]
+            result = client.delete_dataset(dsid)
+
         elif name == "list_instruments":
             result = client.list_instruments()
             
