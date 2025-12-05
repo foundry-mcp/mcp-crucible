@@ -50,7 +50,7 @@ async def handle_list_tools() -> List[Tool]:
     return [
         Tool(
             name="list_projects",
-            description="List all accessible projects in Crucible. This function first checks if the API key is associated with a user or admin account. Then uses that information to either list all projects (admin) or all projects associated with the current user's ORCID",
+            description="List all accessible projects in Crucible.  Then uses that information to either list all projects (admin) or all projects associated with the current user's ORCID",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -315,29 +315,6 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="get_request_status",
-            description="Get the status of a request (ingestion, scicat, etc)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    },
-                    "reqid": {
-                        "type": "string",
-                        "description": "Request ID"
-                    },
-                    "request_type": {
-                        "type": "string",
-                        "description": "Type of request",
-                        "enum": ["ingest", "scicat_update"]
-                    }
-                },
-                "required": ["dsid", "reqid", "request_type"]
-            },
-        ),
-        Tool(
             name="get_ingestion_status",
             description="Get the status of an ingestion request",
             inputSchema={
@@ -371,33 +348,6 @@ async def handle_list_tools() -> List[Tool]:
                     }
                 },
                 "required": ["dsid", "reqid"]
-            },
-        ),
-        Tool(
-            name="wait_for_request_completion",
-            description="Wait for a request to complete by polling its status",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    },
-                    "reqid": {
-                        "type": "string",
-                        "description": "Request ID"
-                    },
-                    "request_type": {
-                        "type": "string",
-                        "description": "Type of request",
-                        "enum": ["ingest", "scicat_update"]
-                    },
-                    "sleep_interval": {
-                        "type": "integer",
-                        "description": "Seconds between status checks (default: 5)"
-                    }
-                },
-                "required": ["dsid", "reqid", "request_type"]
             },
         ),
         Tool(
@@ -634,20 +584,6 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="delete_dataset",
-            description="Delete a dataset (caution: this is a destructive operation)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    }
-                },
-                "required": ["dsid"]
-            },
-        ),
-        Tool(
             name="list_instruments",
             description="List all available instruments",
             inputSchema={
@@ -698,7 +634,7 @@ async def handle_list_tools() -> List[Tool]:
         ),
         Tool(
             name="list_samples",
-            description="List samples with optional filtering",
+            description="List samples with optional filtering.  None of the filters are expecting the internal database ID, they expect either a uuid or a custom field with a descriptive ID. ",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -717,6 +653,10 @@ async def handle_list_tools() -> List[Tool]:
                     "sample_name": {
                         "type": "string",
                         "description": "If provided, filters samples by name"
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "description": "If provided, filters samples by project ID"
                     },
                     "owner_orcid": {
                         "type": "string",
@@ -892,12 +832,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             file_to_upload = arguments.get("file_to_upload")
             ingestor = arguments.get("ingestor")
             result = client.request_ingestion(dsid, file_to_upload=file_to_upload, ingestor=ingestor)
-            
-        elif name == "get_request_status":
-            dsid = arguments["dsid"]
-            reqid = arguments["reqid"]
-            request_type = arguments["request_type"]
-            result = client.get_request_status(dsid, reqid, request_type)
 
         elif name == "get_ingestion_status":
             dsid = arguments["dsid"]
@@ -908,13 +842,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             dsid = arguments["dsid"]
             reqid = arguments["reqid"]
             result = client.get_scicat_status(dsid, reqid)
-
-        elif name == "wait_for_request_completion":
-            dsid = arguments["dsid"]
-            reqid = arguments["reqid"]
-            request_type = arguments["request_type"]
-            sleep_interval = arguments.get("sleep_interval", 5)
-            result = client.wait_for_request_completion(dsid, reqid, request_type, sleep_interval=sleep_interval)
 
         elif name == "get_thumbnails":
             dsid = arguments["dsid"]
@@ -979,10 +906,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             dsid = arguments["dsid"]
             limit = arguments.get("limit", 100)
             result = client.get_organized_google_drive_info(dsid, limit=limit)
-
-        elif name == "delete_dataset":
-            dsid = arguments["dsid"]
-            result = client.delete_dataset(dsid)
 
         elif name == "list_instruments":
             result = client.list_instruments()
