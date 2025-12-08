@@ -10,4 +10,4 @@ MCP server for the Crucible Python Client
 
    ``` claude mcp add --transport stdio crucible-mcp --env CRUCIBLE_API_KEY={your-api-key} --env CRUCIBLE_API_URL=https://crucible.lbl.gov/testapi -- uv run python crucible_mcp_server.py ```
 
-You can create or retrieve your crucible api key by navigating to https://crucible.lbl.gov/testapi2/user_apikey and logging in with your ORCID credentials
+You can create or retrieve your crucible api key by navigating to https://crucible.lbl.gov/testapi/user_apikey and logging in with your ORCID credentials
