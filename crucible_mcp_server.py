@@ -32,6 +32,7 @@ import mcp.types as types
 from mcp.server.stdio import stdio_server
 
 from pycrucible import CrucibleClient
+from pycrucible.models import BaseDataset
 
 
 # Global client instance
@@ -42,10 +43,9 @@ server = Server("crucible-api")
 
 @server.list_tools()
 async def handle_list_tools() -> List[Tool]:
-    """List available Crucible API tools. These tools provide access to the Molecular Foundry data lakehouse 
+    """List available Crucible API tools. These tools provide access to the Molecular Foundry data management platform
         which contains experimental synthesis and characterization data as well as information about the users, 
-        projects, and instruments involved in acquiring the data.  Any instrument settings or 
-        parameters should be saved in the scientific_metadata record associated with each dataset. 
+        projects, and instruments involved in acquiring the data. 
         """
     return [
         Tool(
@@ -60,20 +60,6 @@ async def handle_list_tools() -> List[Tool]:
                     }
                 },
                 "required": []
-            },
-        ),
-        Tool(
-            name="get_projects_by_user",
-            description="Get all projects for a specific user by their ORCID",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "orcid": {
-                        "type": "string",
-                        "description": "ORCID identifier (format: 0000-0000-0000-000X)"
-                    }
-                },
-                "required": ["orcid"]
             },
         ),
         Tool(
@@ -219,80 +205,6 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="upload_dataset",
-            description="Upload a file to a dataset",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    },
-                    "file_path": {
-                        "type": "string",
-                        "description": "Path to the file to upload"
-                    }
-                },
-                "required": ["dsid", "file_path"]
-            },
-        ),
-        Tool(
-            name="create_dataset",
-            description="Create a new dataset with metadata",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dataset_name": {
-                        "type": "string",
-                        "description": "Name of the dataset"
-                    },
-                    "unique_id": {
-                        "type": "string",
-                        "description": "Unique identifier for the dataset"
-                    },
-                    "public": {
-                        "type": "boolean",
-                        "description": "Whether the dataset is public",
-                        "default": False
-                    },
-                    "owner_orcid": {
-                        "type": "string",
-                        "description": "ORCID of the dataset owner"
-                    },
-                    "project_id": {
-                        "type": "string",
-                        "description": "ID of the project this dataset belongs to"
-                    },
-                    "instrument_name": {
-                        "type": "string",
-                        "description": "Name of the instrument used"
-                    },
-                    "measurement": {
-                        "type": "string",
-                        "description": "Type of measurement"
-                    },
-                    "session_name": {
-                        "type": "string",
-                        "description": "Name of the measurement session"
-                    },
-                    "data_format": {
-                        "type": "string",
-                        "description": "Format of the dataset"
-                    },
-                    "scientific_metadata": {
-                        "type": "object",
-                        "description": "Additional scientific metadata"
-                    },
-                    "keywords": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "List of keywords to associate with the dataset"
-                    }
-                },
-                "required": []
-            },
-        ),
-        Tool(
             name="request_ingestion",
             description="Request dataset ingestion",
             inputSchema={
@@ -306,10 +218,15 @@ async def handle_list_tools() -> List[Tool]:
                         "type": "string",
                         "description": "Path to the file to ingest"
                     },
-                    "ingestor": {
+                    "ingestion_class": {
                         "type": "string",
                         "description": "Ingestion class to use"
+                    },
+                    "wait_for_response": {
+                        "type": "boolean",
+                        "description": "Whether to wait for the ingestion request to complete before returning a value to the user"
                     }
+
                 },
                 "required": ["dsid"]
             },
@@ -468,7 +385,7 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="list_keywords",
+            name="get_keywords",
             description="List all keywords in the database with their dataset counts",
             inputSchema={
                 "type": "object",
@@ -500,21 +417,7 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="get_dataset_keywords",
-            description="Get keywords associated with a dataset",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    }
-                },
-                "required": ["dsid"]
-            },
-        ),
-        Tool(
-            name="send_to_scicat",
+            name="request_scicat_upload",
             description="Request SciCat update for a dataset",
             inputSchema={
                 "type": "object",
@@ -538,21 +441,7 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="request_google_drive_transfer",
-            description="Request transfer of dataset to Google Drive",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    }
-                },
-                "required": ["dsid"]
-            },
-        ),
-        Tool(
-            name="get_google_drive_info",
+            name="get_google_drive_location",
             description="Get current Google Drive location information for a dataset",
             inputSchema={
                 "type": "object",
@@ -565,24 +454,7 @@ async def handle_list_tools() -> List[Tool]:
                 "required": ["dsid"]
             },
         ),
-        Tool(
-            name="get_organized_google_drive_info",
-            description="Get organized Google Drive folder information for a dataset",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "dsid": {
-                        "type": "string",
-                        "description": "Dataset ID"
-                    },
-                    "limit": {
-                        "type": "integer",
-                        "description": "Maximum number of results to return (default: 100)"
-                    }
-                },
-                "required": ["dsid"]
-            },
-        ),
+
         Tool(
             name="list_instruments",
             description="List all available instruments",
@@ -737,20 +609,6 @@ async def handle_list_tools() -> List[Tool]:
             },
         ),
         Tool(
-            name="get_user_by_email",
-            description="Get user details by email",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "email": {
-                        "type": "string",
-                        "description": "Email address of the user"
-                    }
-                },
-                "required": ["email"]
-            },
-        ),
-        Tool(
             name="get_project_users",
             description="Get users associated with a project",
             inputSchema={
@@ -783,9 +641,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             limit = arguments.get("limit", 100)
             result = client.list_projects(limit=limit)
 
-        elif name == "get_projects_by_user":
-            result = client.get_projects_by_user(arguments["orcid"])
-
         elif name == "get_account":
             result = client.get_user_account_info()
 
@@ -794,10 +649,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
 
         elif name == "get_user":
             result = client.get_user(arguments["orcid"])
-        
-        # get_user
-        # get_user_by_email
-        # get_project_users
 
         elif name == "list_datasets":
             #sample_id = arguments.get("sample_id")
@@ -818,20 +669,13 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             file_name = arguments.get("file_name")
             output_path = arguments.get("output_path")
             result = client.download_dataset(dsid, file_name=file_name, output_path=output_path)
-        
-        elif name == "upload_dataset":
-            dsid = arguments["dsid"]
-            file_path = arguments["file_path"]
-            result = client.upload_dataset(dsid, file_path)
-            
-        elif name == "create_dataset":
-            result = client.build_new_dataset_from_json(**arguments)
             
         elif name == "request_ingestion":
             dsid = arguments["dsid"]
             file_to_upload = arguments.get("file_to_upload")
-            ingestor = arguments.get("ingestor")
-            result = client.request_ingestion(dsid, file_to_upload=file_to_upload, ingestor=ingestor)
+            ingestion_class = arguments.get("ingestion_class")
+            wait_for_response = arguments.get('wait_for_response')
+            result = client.request_ingestion(dsid, file_to_upload=file_to_upload, ingestion_class=ingestion_class, wait_for_response = wait_for_response)
 
         elif name == "get_ingestion_status":
             dsid = arguments["dsid"]
@@ -875,37 +719,24 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             overwrite = arguments.get("overwrite", False)
             result = client.update_scientific_metadata(dsid, metadata, overwrite=overwrite)
 
-        elif name == "list_keywords":
+        elif name == "get_keywords":
             limit = arguments.get("limit", 100)
-            result = client.list_keywords(limit=limit)
+            result = client.get_keywords(limit=limit)
 
         elif name == "add_dataset_keyword":
             dsid = arguments["dsid"]
             keyword = arguments["keyword"]
             result = client.add_dataset_keyword(dsid, keyword)
-
-        elif name == "get_dataset_keywords":
-            dsid = arguments["dsid"]
-            result = client.get_dataset_keywords(dsid)
             
-        elif name == "send_to_scicat":
+        elif name == "request_scicat_upload":
             dsid = arguments["dsid"]
             wait_for_response = arguments.get("wait_for_response", False)
             overwrite_data = arguments.get("overwrite_data", False)
-            result = client.send_to_scicat(dsid, wait_for_scicat_response=wait_for_response, overwrite_data=overwrite_data)
+            result = client.request_scicat_upload(dsid, wait_for_response=wait_for_response, overwrite_data=overwrite_data)
 
-        elif name == "request_google_drive_transfer":
+        elif name == "get_google_drive_location":
             dsid = arguments["dsid"]
-            result = client.request_google_drive_transfer(dsid)
-
-        elif name == "get_google_drive_info":
-            dsid = arguments["dsid"]
-            result = client.get_google_drive_info(dsid)
-
-        elif name == "get_organized_google_drive_info":
-            dsid = arguments["dsid"]
-            limit = arguments.get("limit", 100)
-            result = client.get_organized_google_drive_info(dsid, limit=limit)
+            result = client.get_google_drive_location(dsid)
 
         elif name == "list_instruments":
             result = client.list_instruments()
@@ -937,10 +768,6 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             dataset_id = arguments["dataset_id"]
             sample_id = arguments["sample_id"]
             result = client.add_sample_to_dataset(dataset_id, sample_id)
-            
-        elif name == "get_user_by_email":
-            email = arguments["email"]
-            result = client.get_user_by_email(email)
             
         elif name == "get_project_users":
             project_id = arguments["project_id"]
